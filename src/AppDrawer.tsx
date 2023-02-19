@@ -31,6 +31,7 @@ import AccountScreen from './screens/AccountScreen';
 import ContactScreen from './screens/ContactScreen';
 import TrafficScreen from './screens/TrafficScreen';
 import PayScreen from './screens/PayScreen';
+import OrderDetailScreen from './screens/OrderDetailScreen';
 
 const Drawer = createDrawerNavigator();
 function Component(props: any) {
@@ -362,6 +363,11 @@ function AppDrawer() {
           name="Thiết lập gói"
           component={PayScreen}
           options={HeaderDrawer('Thiết lập gói')}
+        />
+        <Drawer.Screen
+          name="Chi tiết đơn hàng"
+          component={OrderDetailScreen}
+          options={HeaderDrawer('Chi tiết đơn hàng')}
         />
       </Drawer.Navigator>
     </Box>

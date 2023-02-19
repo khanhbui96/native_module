@@ -5,7 +5,8 @@ import {
   notice,
   register,
   knowledge,
-  plan,
+  saveOrder,
+  orderDetail,
 } from './5gDataVip';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {Login, AuthData, Register} from '../types/index';
@@ -86,13 +87,33 @@ export const getKnowledgeItemApi = async ({
   });
   return data.data;
 };
-export const getPlanApi = async () => {
+export const saveOrderApi = async ({
+  period,
+  plan_id,
+}: {
+  period: string;
+  plan_id: number;
+}) => {
   const auth_data: any = await EncryptedStorage.getItem('auth_data');
   const authData = JSON.parse(auth_data);
-  const {data} = await api.get(plan, {
+  const {data} = await api.post(
+    saveOrder,
+    {period, plan_id},
+    {
+      headers: {
+        Authorization: `${authData.data.auth_data}`,
+      },
+    },
+  );
+  return data;
+};
+export const orderDetailApi = async ({trade_no}: {trade_no: string}) => {
+  const auth_data: any = await EncryptedStorage.getItem('auth_data');
+  const authData = JSON.parse(auth_data);
+  const {data} = await api.get(`${orderDetail}${trade_no}`, {
     headers: {
       Authorization: `${authData.data.auth_data}`,
     },
   });
-  return data.data;
+  return data;
 };

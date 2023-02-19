@@ -1,39 +1,65 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Radio, Text, Center, Input, Pressable, Button} from 'native-base';
+import {
+  Box,
+  Radio,
+  Text,
+  Center,
+  Input,
+  AlertDialog,
+  Button,
+} from 'native-base';
+import {saveOrderApi} from '../api/serverApi';
+import {useNavigation} from '@react-navigation/native';
 
 interface PayItemProps {
   plan: any;
 }
 const PayItem = (props: PayItemProps) => {
+  const navigation: any = useNavigation();
   const {plan} = props;
-  const [value, setValue] = useState('Một tháng');
-  const [data, setData] = useState({
-    month_price: '',
-    quarter_price: '',
-    half_year_price: '',
-    capacity_limit: -1,
-    name: '',
-    timeSelect: 'Một tháng',
-    price: 0,
-  });
-  useEffect(() => {
-    const {name, month_price, quarter_price, half_year_price, capacity_limit} =
-      plan;
-    let timeSelect;
-    let price;
-    if (value === '1') {
-      timeSelect = 'Một tháng';
-      price = month_price;
+  const [isOpen, setIsOpen] = React.useState(false);
+  const onClose = () => setIsOpen(false);
+  const cancelRef = React.useRef(null);
+  const {
+    name,
+    month_price,
+    quarter_price,
+    half_year_price,
+    capacity_limit,
+    onetime_price,
+    id,
+  } = plan;
+  const [value, setValue] = useState(onetime_price ? 'Dài hạn' : 'Một tháng');
+  const [price1, setPrice1] = useState(0);
+  const handleOrder = async () => {
+    let period;
+    switch (value) {
+      case 'Một tháng':
+        period = 'month_price';
+        break;
+      case 'Ba tháng':
+        period = 'quarter_price';
+        break;
+      case 'Sáu tháng':
+        period = 'half_year_price';
+        break;
+      default:
+        period = 'onetime_price';
+        break;
     }
-    setData({
-      ...data,
-      month_price,
-      quarter_price,
-      half_year_price,
-      capacity_limit,
-      name,
-    });
-  }, [plan]);
+
+    try {
+      setIsOpen(false);
+      const {data} = await saveOrderApi({period, plan_id: id});
+      await navigation.navigate('Chi tiết đơn hàng', {trade_no: data});
+    } catch (error) {}
+  };
+  useEffect(() => {
+    value === 'Một tháng' && setPrice1(month_price);
+    value === 'Ba tháng' && setPrice1(quarter_price);
+    value === 'Sáu tháng' && setPrice1(half_year_price);
+    value === 'Dài hạn' && setPrice1(onetime_price);
+  }, [plan, value]);
   return (
     <Box
       w="96%"
@@ -56,33 +82,49 @@ const PayItem = (props: PayItemProps) => {
       </Box>
 
       <Box mx="3">
-        <Radio.Group
-          onChange={value => {
-            console.log(value);
-            setValue(value);
-          }}
-          defaultValue="Một tháng"
-          name="exampleGroup"
-          accessibilityLabel="select prize">
-          <Radio value="Một tháng" my={1}>
-            <Box flexDirection="row" w="90%" justifyContent="space-between">
-              <Text fontSize="16">Một tháng</Text>
-              <Text fontSize="16">đ{data.month_price}</Text>
-            </Box>
-          </Radio>
-          <Radio value="Ba tháng" my={1}>
-            <Box flexDirection="row" w="90%" justifyContent="space-between">
-              <Text fontSize="16">Ba tháng</Text>
-              <Text fontSize="16">đ{data.quarter_price}</Text>
-            </Box>
-          </Radio>
-          <Radio value="Sáu tháng" my={1}>
-            <Box flexDirection="row" w="90%" justifyContent="space-between">
-              <Text fontSize="16">Sáu tháng</Text>
-              <Text fontSize="16">đ{data.half_year_price}</Text>
-            </Box>
-          </Radio>
-        </Radio.Group>
+        {!onetime_price ? (
+          <Radio.Group
+            onChange={value => {
+              setValue(value);
+            }}
+            defaultValue="Một tháng"
+            name="Chu ky"
+            accessibilityLabel="select prize">
+            <Radio value="Một tháng" my={1}>
+              <Box flexDirection="row" w="90%" justifyContent="space-between">
+                <Text fontSize="16">Một tháng</Text>
+                <Text fontSize="16">đ{month_price}</Text>
+              </Box>
+            </Radio>
+            <Radio value="Ba tháng" my={1}>
+              <Box flexDirection="row" w="90%" justifyContent="space-between">
+                <Text fontSize="16">Ba tháng</Text>
+                <Text fontSize="16">đ{quarter_price}</Text>
+              </Box>
+            </Radio>
+            <Radio value="Sáu tháng" my={1}>
+              <Box flexDirection="row" w="90%" justifyContent="space-between">
+                <Text fontSize="16">Sáu tháng</Text>
+                <Text fontSize="16">đ{half_year_price}</Text>
+              </Box>
+            </Radio>
+          </Radio.Group>
+        ) : (
+          <Radio.Group
+            onChange={value => {
+              setValue(value);
+            }}
+            defaultValue="Dài hạn"
+            name="Dài hạn"
+            accessibilityLabel="select prize">
+            <Radio value="Dài hạn" my={1}>
+              <Box flexDirection="row" w="90%" justifyContent="space-between">
+                <Text fontSize="16">Dài hạn</Text>
+                <Text fontSize="16">{onetime_price} Đ</Text>
+              </Box>
+            </Radio>
+          </Radio.Group>
+        )}
       </Box>
       <Box
         p="2"
@@ -127,10 +169,10 @@ const PayItem = (props: PayItemProps) => {
         justifyContent="space-between"
         alignItems={'center'}>
         <Text color="light.200" fontWeight="400" fontSize="14">
-          {data.name} x {value}
+          {name} x {value}
         </Text>
-              <Text color="light.200" fontWeight="400" fontSize="14">
-                  
+        <Text color="light.200" fontWeight="400" fontSize="14">
+          {price1} Đ
         </Text>
       </Box>
       <Box
@@ -152,16 +194,39 @@ const PayItem = (props: PayItemProps) => {
         justifyContent="space-between"
         alignItems={'center'}>
         <Text color="light.200" fontWeight="400" fontSize="20">
-          {value === 'Một tháng' && `${data.month_price}VND`}
-          {value === 'Ba tháng' && `${data.quarter_price}VND`}
-          {value === 'Sáu tháng' && `${data.half_year_price}VND`}
+          {price1} VNĐ
         </Text>
       </Box>
       <Box bg="muted.700">
-        <Button m="2">
-          {data.capacity_limit !== -1 ? 'Đặt hàng' : 'Không khả dụng'}
+        <Button m="2" onPress={() => setIsOpen(!isOpen)}>
+          {capacity_limit !== -1 ? 'Đặt hàng' : 'Không khả dụng'}
         </Button>
       </Box>
+      <AlertDialog
+        leastDestructiveRef={cancelRef}
+        isOpen={isOpen}
+        onClose={onClose}>
+        <AlertDialog.Content>
+          <AlertDialog.CloseButton />
+          <AlertDialog.Header>Chú Ý </AlertDialog.Header>
+          <AlertDialog.Body>
+            Việc thay đổi gói dịch vụ sẽ thay thế gói hiện tại bằng gói mới, xin
+            lưu ý.
+          </AlertDialog.Body>
+          <AlertDialog.Footer>
+            <Button.Group space={2}>
+              <Button
+                variant="unstyled"
+                colorScheme="coolGray"
+                onPress={onClose}
+                ref={cancelRef}>
+                Huỷ
+              </Button>
+              <Button onPress={handleOrder}>Đồng ý</Button>
+            </Button.Group>
+          </AlertDialog.Footer>
+        </AlertDialog.Content>
+      </AlertDialog>
     </Box>
   );
 };
